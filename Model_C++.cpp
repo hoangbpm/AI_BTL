@@ -186,34 +186,70 @@ public:
     }  
 };  
 
-// Main function  
+
 int main() {  
     MyXGBClassifier classifier;  
 
-    std::string model_file_path = "model_0.bst";  // Path to your binary file  
+    // Danh sách các tệp mô hình  
+    std::vector<std::string> model_file_paths = {  
+        "model_0.bst",  
+        "model_1.bst",  
+        "model_2.bst"  
+        // ... nếu có nhiều mô hình hơn   
+    };  
+
+    // Dữ liệu thử nghiệm  
+    std::vector<std::vector<double>> x_test = {  
+        {21.23506965774815, 70.6707597967895, 20.530236045490057, 831.6871648444841},  
+        {78.19459112971967, 60.912151814530944, 39.69170019991617, 746.310768603845}  
+    };  
+
     try {  
-        classifier.loadModels(model_file_path);  // Load models from the binary file  
+        // Mảng để lưu trữ dự đoán cho từng mẫu từ tất cả các mô hình  
+        std::vector<std::vector<int>> aggregated_predictions(x_test.size(), std::vector<int>(model_file_paths.size(), 0));  
 
-        std::cout << "Successfully loaded models with tree structures:\n";  
-        for (const auto& model : classifier.models) {  
-            printTree(model.root);  // Print each tree structure from the classifier  
+        // Lặp qua từng mô hình  
+        for (size_t model_index = 0; model_index < model_file_paths.size(); ++model_index) {  
+            const auto& model_file_path = model_file_paths[model_index];  // Lấy tên tệp mô hình  
+
+            // Tải mô hình từ tệp nhị phân  
+            classifier.loadModels(model_file_path);  
+
+            std::cout << "Successfully loaded model from " << model_file_path << " with tree structures:\n";  
+            for (const auto& model : classifier.models) {  
+                // printTree(model.root);  // In cấu trúc cây từ bộ phân loại (nếu cần)  
+            }  
+            
+            // Dự đoán với dữ liệu thử nghiệm  
+            auto predictions = classifier.predict(x_test);  
+            std::cout << "Predictions from the model: ";  
+                for (double pred : predictions) {  
+                    std::cout << pred << " ";  
+                }  
+                std::cout << std::endl; 
+
+
+            // Chuyển đổi dự đoán thành nhị phân cho từng mẫu  
+            for (size_t i = 0; i < predictions.size(); ++i) {  
+                aggregated_predictions[i][model_index] = static_cast<int>(predictions[i] >= 0.5 ? 1 : 0); // Chuyển đổi xác suất thành nhị phân  
+            }  
+
+            // Xóa các mô hình đã tải để giải phóng bộ nhớ  
+            classifier.models.clear();  
         }  
-        
-        std::vector<std::vector<double>> x_test = {  
-            {21.23506965774815,70.6707597967895,20.530236045490057,831.6871648444841},  
-            {78.19459112971967,60.912151814530944,39.69170019991617,746.310768603845}  
-        };  
 
-        auto predictions = classifier.predict(x_test);  
-
-        std::cout << "Predictions from the model: ";  
-        for (double pred : predictions) {  
-            std::cout << pred << " ";  
+        // Xuất dự đoán từ tất cả các mô hình  
+        for (size_t i = 0; i < aggregated_predictions.size(); ++i) {  
+            std::cout << "Predictions for sample " << i << ": [ ";  
+            for (size_t j = 0; j < aggregated_predictions[i].size(); ++j) {  
+                std::cout << aggregated_predictions[i][j] << " ";  
+            }  
+            std::cout << "]" << std::endl;  
         }  
-        std::cout << std::endl;  
+
     } catch (const std::exception& e) {  
         std::cerr << "Error: " << e.what() << std::endl;  
     }  
 
     return 0;  
-}
+}  
