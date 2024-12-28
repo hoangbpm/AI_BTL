@@ -171,7 +171,8 @@ typedef struct MyXGBClassifier {
     MyXGBClassificationTree** models; // Mảng chứa các cây  
     unsigned int num_models;           // Số lượng mô hình  
     double learning_rate;              // Tỷ lệ học  
-    double base_score;                 // Điểm cơ sở  
+    double base_score; 
+                    // Điểm cơ sở  
 } MyXGBClassifier;  
 
 // Hàm khởi tạo bộ phân loại  
@@ -267,36 +268,86 @@ double* classifierPredict(MyXGBClassifier* classifier, const double** x_test, un
 }  
 
 // Hàm chính  
+
+
 int main() {  
-    MyXGBClassifier* classifier = createMyXGBClassifier(); // Tạo bộ phân loại  
+    MyXGBClassifier* classifier = createMyXGBClassifier(); // Create classifier  
     if (classifier == NULL) {  
-        return 1; // Thoát nếu không tạo được bộ phân loại  
+        return 1; // Exit if classifier cannot be created  
     }  
 
-    loadModels(classifier, "model_0.bst"); // Tải mô hình từ tệp nhị phân  
+    // Array of model filenames (only three models)  
+    const char* model_files[] = {  
+        "model_0.bst",  
+        "model_1.bst",  
+        "model_2.bst"  
+    };  
 
-    // Dữ liệu thử nghiệm  
+    // Number of models and samples  
+    const unsigned int num_models = sizeof(model_files) / sizeof(model_files[0]);  
     const double* x_test[] = {  
         (double[]){45.9167, 89.3638, 37.8872, 319.1341},  
         (double[]){32.7403, 83.3032, 15.9857, 116.4093}  
     };  
 
-    unsigned int num_samples = sizeof(x_test) / sizeof(x_test[0]); // Tính số mẫu  
+    unsigned int num_samples = sizeof(x_test) / sizeof(x_test[0]); // Calculate number of samples  
 
-    // Dự đoán cho dữ liệu thử nghiệm  
-    double* predictions = classifierPredict(classifier, x_test, num_samples);  
-    if (predictions != NULL) {  
-        free(predictions); // Giải phóng bộ nhớ cho mảng giá trị logits  
+    // Array to store predictions for each sample across all models  
+    int predictions_arr[num_samples][num_models];  
+
+    // Load models one by one and predict using each one  
+    for (unsigned int i = 0; i < num_models; ++i) {  
+        loadModels(classifier, model_files[i]); // Load each model  
+
+        // Generate predictions for the currently loaded model  
+        double* predictions = classifierPredict(classifier, x_test, num_samples);  
+        
+        // Output predictions for the current model  
+        if (predictions != NULL) {  
+            printf("Predictions for Model %u:\n", i);  
+            for (unsigned int j = 0; j < num_samples; ++j) {  
+                // Apply thresholding and store as integer (0 or 1)  
+                predictions_arr[j][i] = (predictions[j] >= 0.5) ? 1 : 0;  
+                printf("Sample %u: %d\n", j, predictions_arr[j][i]); // Print binary prediction  
+            }  
+            free(predictions); // Free memory for the predictions array  
+        } else {  
+            printf("No predictions available for Model %u.\n", i); // Handle case where predictions fail  
+        }  
     }  
 
-    for (unsigned int i = 0; i < classifier->num_models; ++i) {  
-        // In cây để kiểm tra cấu trúc  
-        // printf("Tree %u:\n", i);  
-        // printTree(classifier->models[i]->root, 0);  
+    // Output full predictions array for all samples  
+    printf("Final Predictions Array:\n");  
+    for (unsigned int j = 0; j < num_samples; ++j) {  
+        printf("Sample %u Predictions: [", j);  
+        for (unsigned int k = 0; k < num_models; ++k) {  
+            printf("%d", predictions_arr[j][k]);  
+            if (k < num_models - 1) printf(", "); // Print comma between elements  
+        }  
+        printf("]\n");  
+    }  
+     // Output final interpreted results based on model predictions  
+    printf("Final Interpreted Results:\n");  
+    for (unsigned int j = 0; j < num_samples; ++j) {  
+        int interpreted_result = 0;  
+        int combination = predictions_arr[j][0] * 100 + predictions_arr[j][1] * 10 + predictions_arr[j][2];  
+
+        // Interpret results based on the specific combination  
+        if (combination == 100) {  
+            interpreted_result = 0;  
+        } else if (combination == 10) {  
+            interpreted_result = 1;  
+        } else if (combination == 1) {  
+            interpreted_result = 2;  
+        } else {  
+            interpreted_result = 0;  
+        }  
+
+        printf("Sample %u Interpreted Result: %d\n", j, interpreted_result);  
     }  
 
-    // Giải phóng bộ nhớ cho classifier  
+    // Clean up memory for classifier  
     freeMyXGBClassifier(classifier);  
 
-    return 0; // Trả về mã 0 để chỉ ra thành công  
-}
+    return 0; // Return code 0 to indicate success  
+}  
