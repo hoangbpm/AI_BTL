@@ -17,8 +17,14 @@ def save_tree_to_binary(bin_file, node):
 
         # Ghi thông tin cho nút bình thường  
         bin_file.write(struct.pack('I', node['fid']))  # Ghi fid  
-        bin_file.write(struct.pack('d', node['split_point']))  # Ghi split_point  
-        bin_file.write(struct.pack('d', node['gain']))  # Ghi gain  
+        bin_file.write(struct.pack('d', node['split_point']))  # Ghi split_point 
+        
+        # bin_file.write(struct.pack('d', round(node['split_point'], 2)))  # Ghi split_point làm tròn 2 chữ số  
+ 
+        bin_file.write(struct.pack('d', node['gain']))  # Ghi gain
+         
+        # bin_file.write(struct.pack('d', round(node['gain'], 2)))  # Ghi gain làm tròn 2 chữ số  
+ 
 
         # Ghi cây con trái và phải  
         save_tree_to_binary(bin_file, node['left'])  
@@ -27,6 +33,9 @@ def save_tree_to_binary(bin_file, node):
         # Ghi đánh dấu cho nút lá (1)  
         bin_file.write(struct.pack('B', 1))  # 1: là leaf  
         bin_file.write(struct.pack('d', node))  # Ghi giá trị lá  
+        
+        # bin_file.write(struct.pack('d', round(node, 2)))  # Ghi giá trị lá làm tròn 2 chữ số  
+
 
 # Hàm để đọc mô hình từ file nhị phân  
 def load_model_from_binary(filepath):  
@@ -71,8 +80,8 @@ def load_tree_from_binary(bin_file):
     return node  
 
 # Đọc từ file JSON  
-file_json_path = 'model_2.json'  # Đường dẫn tới file JSON của bạn  
-file_bst_path = 'model_2.bst'  # Đường dẫn tới file nhị phân muốn lưu  
+file_json_path = r'C:\Users\ASUS\Documents\BTL_AI\models\v3\model_1.json'  # Đường dẫn tới file JSON của bạn  
+file_bst_path = r'C:\Users\ASUS\Documents\BTL_AI\models\v3\model_1.bst'  # Đường dẫn tới file nhị phân muốn lưu  
 
 # Lưu mô hình sang định dạng nhị phân  
 with open(file_json_path, 'r') as json_file:  
