@@ -170,7 +170,7 @@ class MyXGBClassifier:
     def F2P(self, x):  
         return 1. / (1. + np.exp(-x))  
 
-    def fit(self, x, y):  
+    def fit(self, x, y,z):  
         # Calculate initial value  
         F0 = np.log(self.base_score / (1. - self.base_score))  
         Fm = np.repeat(F0, x.shape[0])  
@@ -194,7 +194,7 @@ class MyXGBClassifier:
 
             self.models.append(model)  
 
-            loss_value = -(y * np.log(y_hat + 1e-8) + (1. - y) * np.log(1. - y_hat + 1e-8)).sum()  
+            loss_value = (-(y * np.log(y_hat + 1e-8) + (1. - y) * np.log(1. - y_hat + 1e-8)).sum())/z
             self.loss.append(loss_value)  
             print(f"Loss after estimator {m + 1}: {loss_value}")  
 
@@ -248,9 +248,9 @@ if __name__ == "__main__":
 
     # List of input CSV files  
     filenames = [  
-        r'C:\Users\ASUS\Documents\BTL_AI\class_0.csv',  
-        r'C:\Users\ASUS\Documents\BTL_AI\class_1.csv',    
-        r'C:\Users\ASUS\Documents\BTL_AI\class_2.csv',    
+        r'local\class_0.csv',  
+        r'local\class_1.csv',    
+        r'local\class_2.csv',    
     ]  
 
     for i, filename in enumerate(filenames):  
@@ -258,11 +258,12 @@ if __name__ == "__main__":
         X, y = load_data(filename)  
         split_index = int(0.8 * len(X))  # Calculate the index for splitting  
         X_train, X_val = X[:split_index], X[split_index:]  # Split features  
-        y_train, y_val = y[:split_index], y[split_index:]  # Split labels  
+        y_train, y_val = y[:split_index], y[split_index:]  # Split labels
+        num_X_train = len(X_train)  
 
         # Initialize and train the model for the current dataset  
         model = MyXGBClassifier(n_estimators=15, max_depth=6, learning_rate=0.3, prune_gamma=0.0)  
-        loss_history = model.fit(X_train, y_train)  
+        loss_history = model.fit(X_train, y_train,num_X_train)  
 
         # Print loss history  
         print(f"\nLoss History for model trained on {filename}:")  
