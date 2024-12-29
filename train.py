@@ -1,5 +1,6 @@
 import numpy as np  
-import json  
+import json 
+import os 
 
 # Function to load data from CSV files  
 def load_data(filename):  
@@ -8,6 +9,20 @@ def load_data(filename):
     y = data[:, -1]  
     return X, y  
 
+# Function to log the training loss for a specific version  
+def log_training_loss(version_folder, filename, loss_history):  
+    log_filename = os.path.join(version_folder, 'log_train.txt')  
+    with open(log_filename, 'a') as f:  
+        loss_str = ', '.join(map(str, loss_history))  # Convert the loss history to a comma-separated string  
+        f.write(f'File: {filename}, Loss: [{loss_str}]\n')  
+
+# Function to log accuracy results for a specific version  
+def log_accuracy(version_folder, filename, accuracy):  
+    result_filename = os.path.join(version_folder, 'log_accuracy.txt')  
+    with open(result_filename, 'a') as f:  
+        f.write(f'File: {filename}, Accuracy: {accuracy:.2f}%\n')  
+
+        
 # Decision tree class  
 class MyXGBClassificationTree:  
     def __init__(self, max_depth, reg_lambda, prune_gamma):  
@@ -218,8 +233,19 @@ class MyXGBClassifier:
             y_pred = (y_prob > 0.5).astype('uint8')  
             return y_pred  
 
-# Execution section  
+
 if __name__ == "__main__":  
+    # Version input  
+    version = input("Enter version number (e.g., 1, 2, ...): ")  
+    
+    # Create a folder for models if it doesn't exist  
+    models_dir = 'models'  
+    os.makedirs(models_dir, exist_ok=True)  
+
+    # Create a folder for the specific version  
+    version_folder = os.path.join(models_dir, f'v{version}')  
+    os.makedirs(version_folder, exist_ok=True)  
+
     # List of input CSV files  
     filenames = [  
         r'C:\Users\ASUS\Documents\BTL_AI\class_0.csv',  
@@ -230,19 +256,35 @@ if __name__ == "__main__":
     for i, filename in enumerate(filenames):  
         # Load data from the current file  
         X, y = load_data(filename)  
+        split_index = int(0.8 * len(X))  # Calculate the index for splitting  
+        X_train, X_val = X[:split_index], X[split_index:]  # Split features  
+        y_train, y_val = y[:split_index], y[split_index:]  # Split labels  
 
         # Initialize and train the model for the current dataset  
-        model = MyXGBClassifier(n_estimators=10, max_depth=3, learning_rate=0.3, prune_gamma=0.0)  
-        loss_history = model.fit(X, y)  
+        model = MyXGBClassifier(n_estimators=15, max_depth=6, learning_rate=0.3, prune_gamma=0.0)  
+        loss_history = model.fit(X_train, y_train)  
 
         # Print loss history  
         print(f"\nLoss History for model trained on {filename}:")  
         print(loss_history)  
 
-        # Predict on training data  
-        predictions = model.predict(X)  
-        print("\nPredictions:")  
-        print(predictions)  
+        # Predict on validation data  
+        predictions = model.predict(X_val)  
+
+        # Calculate accuracy  
+        accuracy = np.mean(predictions == y_val) * 100  # Calculate accuracy as percentage  
+
+        print(f"\nAccuracy for model trained on {filename}: {accuracy:.2f}%")  
+        print("\nActual y_val:")  
+        print(y_val.astype(int))  # Convert to integer type  
+        print("\nPredictions on validation data:")  
+        print(predictions.astype(int))  # Optionally, convert predictions to integer as well  
+
+        # Log training loss  
+        log_training_loss(version_folder, filename, loss_history)  
+
+        # Log accuracy results  
+        log_accuracy(version_folder, filename, accuracy)  
 
         # Print the best split information from all models  
         print("\nBest Split Information from All Models:")  
@@ -250,5 +292,5 @@ if __name__ == "__main__":
             print(f"Model {j + 1}:")  
             print(split_info)  
 
-        # Optionally, save each model's information to a separate JSON file  
-        model.save_all_models_to_json(f'model_{i}.json')
+        # Save model weights as JSON files with versioning  
+        model.save_all_models_to_json(os.path.join(version_folder, f'model_{i + 1}.json'))  
