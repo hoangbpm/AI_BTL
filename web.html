@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Kiểu Blynk - Lựa Chọn Ngày Trên Mức Bơm</title>
+    <!-- Thêm Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Thư viện Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4"></script>
+</head>
+<body class="bg-gray-900 text-white">
+    <!-- Tiêu đề -->
+    <div class="bg-gray-800 p-4">
+        <div class="container mx-auto flex items-center justify-center">
+            <h1 class="text-2xl font-bold text-green-500">Blynk Dashboard</h1>
+        </div>
+    </div>
+
+    <!-- Nội dung chính -->
+    <div class="container mx-auto py-8">
+        <!-- Lựa chọn ngày -->
+        <div class="bg-gray-800 p-6 rounded-lg mb-8">
+            <h2 class="text-xl font-semibold mb-4">Chọn ngày để xem thông số</h2>
+            <select id="dateSelector" class="bg-gray-700 text-white p-2 rounded">
+                <!-- Các tùy chọn ngày sẽ được thêm bằng JavaScript -->
+            </select>
+        </div>
+
+        <!-- Hiển thị Pump Level cho ngày được chọn -->
+        <div class="bg-gray-800 p-6 rounded-lg mb-8">
+            <h2 id="pumpLevelTitle" class="text-xl font-semibold mb-4">Mức bơm cho ngày được chọn</h2>
+            <div id="pumpLevelDisplay" class="text-2xl font-bold"></div>
+        </div>
+
+        <!-- Các Gauge -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <!-- Soil Moisture Gauge -->
+            <div class="bg-gray-800 p-6 rounded-lg flex flex-col items-center">
+                <h2 class="text-xl font-semibold mb-4">Soil Moisture</h2>
+                <div class="relative w-40 h-40">
+                    <canvas id="soilMoistureGauge"></canvas>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span id="soilMoistureValue" class="text-2xl font-bold"></span>
+                    </div>
+                </div>
+            </div>
+            <!-- Air Humidity Gauge -->
+            <div class="bg-gray-800 p-6 rounded-lg flex flex-col items-center">
+                <h2 class="text-xl font-semibold mb-4">Air Humidity</h2>
+                <div class="relative w-40 h-40">
+                    <canvas id="airHumidityGauge"></canvas>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span id="airHumidityValue" class="text-2xl font-bold"></span>
+                    </div>
+                </div>
+            </div>
+            <!-- Light Gauge -->
+            <div class="bg-gray-800 p-6 rounded-lg flex flex-col items-center">
+                <h2 class="text-xl font-semibold mb-4">Light</h2>
+                <div class="relative w-40 h-40">
+                    <canvas id="lightGauge"></canvas>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span id="lightValue" class="text-2xl font-bold"></span>
+                    </div>
+                </div>
+            </div>
+            <!-- Temperature Gauge -->
+            <div class="bg-gray-800 p-6 rounded-lg flex flex-col items-center">
+                <h2 class="text-xl font-semibold mb-4">Temperature</h2>
+                <div class="relative w-40 h-40">
+                    <canvas id="temperatureGauge"></canvas>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span id="temperatureValue" class="text-2xl font-bold"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script -->
+    <script>
+        // Định nghĩa plugin để vẽ kim chỉ
+        Chart.plugins.register({
+            afterDraw: function(chart) {
+                if (chart.config.type === 'doughnut') {
+                    var ctx = chart.chart.ctx;
+                    var width = chart.chart.width;
+                    var height = chart.chart.height;
+                    var needleValue = chart.config.data.datasets[0].needleValue;
+                    var dataTotal = chart.config.data.datasets[0].data.reduce(function(a, b) { return a + b; }, 0);
+                    var angle = Math.PI + (1 / dataTotal * needleValue * Math.PI);
+                    var cx = width / 2;
+                    var cy = chart.chartArea.bottom;
+
+                    // Vẽ kim
+                    ctx.save();
+                    ctx.translate(cx, cy);
+                    ctx.rotate(angle);
+                    ctx.beginPath();
+                    ctx.moveTo(0, -5);
+                    ctx.lineTo(chart.outerRadius - 20, 0);
+                    ctx.lineTo(0, 5);
+                    ctx.fillStyle = 'red';
+                    ctx.fill();
+                    ctx.restore();
+
+                    // Vẽ nút tròn ở giữa
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+                    ctx.fillStyle = '#000';
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+        });
+
+        let allData = [];
+        let gauges = {};
+
+        // Hàm chuyển đổi định dạng ngày từ "DD/MM/YYYY" sang "YYYY-MM-DD"
+        function convertDateFormat(dateString) {
+            const [day, month, year] = dateString.split('/');
+            return `${year}-${month}-${day}`;
+        }
+
+        async function fetchData() {
+            try {
+                const response = await fetch('http://localhost:3000/api/data');
+
+                if (!response.ok) {
+                    throw new Error('HTTP error! status: ' + response.status);
+                }
+
+                const data = await response.json();
+
+                // Lưu trữ tất cả dữ liệu
+                allData = data;
+
+                // Lấy danh sách ngày duy nhất và chuyển đổi định dạng
+                const dates = [...new Set(data.map(item => convertDateFormat(item.date)))];
+
+                // Xác định ngày hôm nay
+                const today = new Date().toISOString().split('T')[0];
+
+                // Thêm các tùy chọn vào select
+                const dateSelector = document.getElementById('dateSelector');
+                dateSelector.innerHTML = ''; // Xóa các tùy chọn cũ
+                dates.forEach(date => {
+                    const option = document.createElement('option');
+                    option.value = date;
+                    // Nếu ngày trùng với hôm nay, thêm chữ "(Hôm nay)"
+                    if (date === today) {
+                        option.textContent = `${date} (Hôm nay)`;
+                    } else {
+                        option.textContent = date;
+                    }
+                    dateSelector.appendChild(option);
+                });
+
+                // Lắng nghe sự kiện thay đổi ngày
+                dateSelector.addEventListener('change', function() {
+                    updateGaugesForDate(this.value);
+                });
+
+                // Hiển thị dữ liệu cho ngày đầu tiên (mặc định)
+                updateGaugesForDate(dateSelector.value);
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        function createGauge(ctx, value, maxValue, color) {
+            return new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [value, maxValue - value],
+                        needleValue: value,
+                        backgroundColor: [color, '#374151'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    rotation: -Math.PI,
+                    circumference: Math.PI,
+                    cutout: '70%',
+                    plugins: {
+                        tooltip: { enabled: false },
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        function updateGaugesForDate(selectedDate) {
+            const selectedData = allData.find(item => convertDateFormat(item.date) === selectedDate);
+            const pumpLevelTitle = document.getElementById('pumpLevelTitle');
+            const today = new Date().toISOString().split('T')[0];
+
+            if (selectedDate === today) {
+                pumpLevelTitle.textContent = 'Mức bơm cho ngày hôm nay';
+            } else {
+                pumpLevelTitle.textContent = 'Mức bơm cho ngày ' + selectedDate;
+            }
+
+            if (selectedData) {
+                // Cập nhật mức bơm
+                const pumpLevelElement = document.getElementById('pumpLevelDisplay');
+                pumpLevelElement.textContent = selectedData.pumpLevel;
+
+                // Cập nhật giá trị hiển thị
+                document.getElementById('soilMoistureValue').textContent = selectedData.soilMoisture;
+                document.getElementById('airHumidityValue').textContent = selectedData.airHumidity;
+                document.getElementById('lightValue').textContent = selectedData.light;
+                document.getElementById('temperatureValue').textContent = selectedData.temperature;
+
+                // Nếu gauges chưa được tạo, tạo mới
+                if (Object.keys(gauges).length === 0) {
+                    // Soil Moisture
+                    gauges.soilMoistureGauge = createGauge(
+                        document.getElementById('soilMoistureGauge').getContext('2d'),
+                        parseFloat(selectedData.soilMoisture),
+                        100,
+                        'rgba(75, 192, 192, 1)'
+                    );
+                    // Air Humidity
+                    gauges.airHumidityGauge = createGauge(
+                        document.getElementById('airHumidityGauge').getContext('2d'),
+                        parseFloat(selectedData.airHumidity),
+                        100,
+                        'rgba(153, 102, 255, 1)'
+                    );
+                    // Light
+                    gauges.lightGauge = createGauge(
+                        document.getElementById('lightGauge').getContext('2d'),
+                        parseFloat(selectedData.light),
+                        100,
+                        'rgba(255, 159, 64, 1)'
+                    );
+                    // Temperature
+                    gauges.temperatureGauge = createGauge(
+                        document.getElementById('temperatureGauge').getContext('2d'),
+                        parseFloat(selectedData.temperature),
+                        50,
+                        'rgba(255, 99, 132, 1)'
+                    );
+                } else {
+                    // Cập nhật dữ liệu cho gauges
+                    updateGaugeData(gauges.soilMoistureGauge, parseFloat(selectedData.soilMoisture), 100);
+                    updateGaugeData(gauges.airHumidityGauge, parseFloat(selectedData.airHumidity), 100);
+                    updateGaugeData(gauges.lightGauge, parseFloat(selectedData.light), 100);
+                    updateGaugeData(gauges.temperatureGauge, parseFloat(selectedData.temperature), 50);
+                }
+            } else {
+                console.log('Không có dữ liệu cho ngày ' + selectedDate);
+                // Nếu không có dữ liệu, hiển thị thông báo
+                const pumpLevelElement = document.getElementById('pumpLevelDisplay');
+                pumpLevelElement.textContent = "Chưa có dữ liệu cho ngày này";
+            }
+        }
+
+        function updateGaugeData(gauge, value, maxValue) {
+            gauge.config.data.datasets[0].data = [value, maxValue - value];
+            gauge.config.data.datasets[0].needleValue = value;
+            gauge.update();
+        }
+
+        fetchData();
+    </script>
+</body>
+</html>
