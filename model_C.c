@@ -271,6 +271,7 @@ double* classifierPredict(MyXGBClassifier* classifier, const double** x_test, un
 
 
 int main() {  
+    printf("PREDICT V4\n");
     MyXGBClassifier* classifier = createMyXGBClassifier(); // Create classifier  
     if (classifier == NULL) {  
         return 1; // Exit if classifier cannot be created  
@@ -278,9 +279,9 @@ int main() {
 
     // Array of model filenames (only three models)  
     const char* model_files[] = {  
-        "model_0.bst",  
-        "model_1.bst",  
-        "model_2.bst"  
+        "C:\\Users\\ASUS\\Documents\\BTL_AI\\AI_BTL\\models\\v4\\model_1.bst",  
+        "C:\\Users\\ASUS\\Documents\\BTL_AI\\AI_BTL\\models\\v4\\model_2.bst",  
+        "C:\\Users\\ASUS\\Documents\\BTL_AI\\AI_BTL\\models\\v4\\model_3.bst"  
     };  
 
     // Number of models and samples  

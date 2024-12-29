@@ -80,8 +80,8 @@ def load_tree_from_binary(bin_file):
     return node  
 
 # Đọc từ file JSON  
-file_json_path = r'C:\Users\ASUS\Documents\BTL_AI\AI_BTL\models\v1\model_2.json'  # Đường dẫn tới file JSON của bạn  
-file_bst_path = r'C:\Users\ASUS\Documents\BTL_AI\AI_BTL\models\v1\model_2.bst'  # Đường dẫn tới file nhị phân muốn lưu  
+file_json_path = r'C:\Users\ASUS\Documents\BTL_AI\AI_BTL\models\v4\model_1.json'  # Đường dẫn tới file JSON của bạn  
+file_bst_path = r'C:\Users\ASUS\Documents\BTL_AI\AI_BTL\models\v4\model_1.bst'  # Đường dẫn tới file nhị phân muốn lưu  
 
 # Lưu mô hình sang định dạng nhị phân  
 with open(file_json_path, 'r') as json_file:  

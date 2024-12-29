@@ -192,16 +192,16 @@ int main() {
 
     // Danh sách các tệp mô hình  
     std::vector<std::string> model_file_paths = {  
-        "model_0.bst",  
-        "model_1.bst",  
-        "model_2.bst"  
+        "C:\\Users\\ASUS\\Documents\\BTL_AI\\AI_BTL\\models\\v2\\model_1.bst",  
+        "C:\\Users\\ASUS\\Documents\\BTL_AI\\AI_BTL\\models\\v2\\model_2.bst",  
+        "C:\\Users\\ASUS\\Documents\\BTL_AI\\AI_BTL\\models\\v2\\model_3.bst" 
         // ... nếu có nhiều mô hình hơn   
     };  
 
     // Dữ liệu thử nghiệm  
     std::vector<std::vector<double>> x_test = {  
-        {21.23506965774815, 70.6707597967895, 20.530236045490057, 831.6871648444841},  
-        {78.19459112971967, 60.912151814530944, 39.69170019991617, 746.310768603845}  
+        {45.9167, 89.3638, 37.8872, 319.1341},  
+        {32.7403, 83.3032, 15.9857, 116.4093}  
     };  
 
     try {  
