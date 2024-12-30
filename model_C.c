@@ -271,84 +271,101 @@ double* classifierPredict(MyXGBClassifier* classifier, const double** x_test, un
 
 
 int main() {  
-    printf("PREDICT V4\n");
-    MyXGBClassifier* classifier = createMyXGBClassifier(); // Create classifier  
+    printf("PREDICT V4\n");  
+    MyXGBClassifier* classifier = createMyXGBClassifier(); // Tạo classifier  
     if (classifier == NULL) {  
-        return 1; // Exit if classifier cannot be created  
+        return 1; // Thoát nếu không thể tạo classifier  
     }  
 
-    // Array of model filenames (only three models)  
+    // Mảng tên tệp mô hình (7 mô hình)  
     const char* model_files[] = {  
-        "C:\\Users\\ASUS\\Documents\\BTL_AI\\AI_BTL\\models\\v4\\model_1.bst",  
-        "C:\\Users\\ASUS\\Documents\\BTL_AI\\AI_BTL\\models\\v4\\model_2.bst",  
-        "C:\\Users\\ASUS\\Documents\\BTL_AI\\AI_BTL\\models\\v4\\model_3.bst"  
+        "C:\\Users\\ASUS\\Documents\\BTL_AI\\AI_BTL\\models\\v5\\model_1.bst",  
+        "C:\\Users\\ASUS\\Documents\\BTL_AI\\AI_BTL\\models\\v5\\model_2.bst",  
+        "C:\\Users\\ASUS\\Documents\\BTL_AI\\AI_BTL\\models\\v5\\model_3.bst",  
+        "C:\\Users\\ASUS\\Documents\\BTL_AI\\AI_BTL\\models\\v5\\model_4.bst",  
+        "C:\\Users\\ASUS\\Documents\\BTL_AI\\AI_BTL\\models\\v5\\model_5.bst",  
+        "C:\\Users\\ASUS\\Documents\\BTL_AI\\AI_BTL\\models\\v5\\model_6.bst",  
+        "C:\\Users\\ASUS\\Documents\\BTL_AI\\AI_BTL\\models\\v5\\model_7.bst",  
     };  
 
-    // Number of models and samples  
+    // Số lượng mô hình và mẫu  
     const unsigned int num_models = sizeof(model_files) / sizeof(model_files[0]);  
     const double* x_test[] = {  
-        (double[]){45.9167, 89.3638, 37.8872, 319.1341},  
-        (double[]){32.7403, 83.3032, 15.9857, 116.4093}  
+        (double[]){78.46, 87.51, 24.49, 151.35},  
+        (double[]){77.94, 58.17, 18.31, 73.59},
+        (double[]){69.09, 51.7, 21.24, 616.62} , 
+        (double[]){31.78, 24.39, 11.0, 87.08}  ,
+        (double[]){40.47, 59.21, 12.13, 918.97}  ,
+        (double[]){50.96, 26.00, 26.81, 792.59}  ,
+        (double[]){17.21, 27.91, 32.61, 277.96}  
+ 
     };  
 
-    unsigned int num_samples = sizeof(x_test) / sizeof(x_test[0]); // Calculate number of samples  
+    unsigned int num_samples = sizeof(x_test) / sizeof(x_test[0]); // Tính số lượng mẫu  
 
-    // Array to store predictions for each sample across all models  
+    // Mảng để lưu trữ dự đoán cho mỗi mẫu qua tất cả các mô hình  
     int predictions_arr[num_samples][num_models];  
 
-    // Load models one by one and predict using each one  
+    // Tải mô hình từng cái và dự đoán sử dụng từng cái  
     for (unsigned int i = 0; i < num_models; ++i) {  
-        loadModels(classifier, model_files[i]); // Load each model  
+        loadModels(classifier, model_files[i]); // Tải từng mô hình  
 
-        // Generate predictions for the currently loaded model  
+        // Tạo dự đoán cho mô hình hiện tại  
         double* predictions = classifierPredict(classifier, x_test, num_samples);  
         
-        // Output predictions for the current model  
+        // Xuất dự đoán cho mô hình hiện tại  
         if (predictions != NULL) {  
-            printf("Predictions for Model %u:\n", i);  
+            printf("Predictions for Model %u:\n", i + 1);  // Đếm từ 1 để dễ hiểu  
             for (unsigned int j = 0; j < num_samples; ++j) {  
-                // Apply thresholding and store as integer (0 or 1)  
+                // Áp dụng ngưỡng và lưu trữ dưới dạng số nguyên (0 hoặc 1)  
                 predictions_arr[j][i] = (predictions[j] >= 0.5) ? 1 : 0;  
-                printf("Sample %u: %d\n", j, predictions_arr[j][i]); // Print binary prediction  
+                printf("Sample %u: %d\n", j, predictions_arr[j][i]); // In dự đoán nhị phân  
             }  
-            free(predictions); // Free memory for the predictions array  
+            free(predictions); // Giải phóng bộ nhớ cho mảng dự đoán  
         } else {  
-            printf("No predictions available for Model %u.\n", i); // Handle case where predictions fail  
+            printf("No predictions available for Model %u.\n", i + 1); // Xử lý trường hợp không có dự đoán  
         }  
     }  
 
-    // Output full predictions array for all samples  
+    // Xuất mảng dự đoán đầy đủ cho tất cả các mẫu  
     printf("Final Predictions Array:\n");  
     for (unsigned int j = 0; j < num_samples; ++j) {  
         printf("Sample %u Predictions: [", j);  
         for (unsigned int k = 0; k < num_models; ++k) {  
             printf("%d", predictions_arr[j][k]);  
-            if (k < num_models - 1) printf(", "); // Print comma between elements  
+            if (k < num_models - 1) printf(", "); // In dấu phẩy giữa các phần tử  
         }  
         printf("]\n");  
     }  
-     // Output final interpreted results based on model predictions  
+
+    // Xuất kết quả cuối cùng dựa trên dự đoán của mô hình  
     printf("Final Interpreted Results:\n");  
     for (unsigned int j = 0; j < num_samples; ++j) {  
         int interpreted_result = 0;  
-        int combination = predictions_arr[j][0] * 100 + predictions_arr[j][1] * 10 + predictions_arr[j][2];  
+        int combination = 0;  
 
-        // Interpret results based on the specific combination  
-        if (combination == 100) {  
-            interpreted_result = 0;  
-        } else if (combination == 10) {  
-            interpreted_result = 1;  
-        } else if (combination == 1) {  
-            interpreted_result = 2;  
-        } else {  
-            interpreted_result = 0;  
+        // Tính toán sự kết hợp dựa trên các dự đoán  
+        for (unsigned int k = 0; k < num_models; ++k) {  
+            combination += predictions_arr[j][k] * (1 << k); // Sử dụng bit shift để tạo số nhị phân  
+        }  
+
+        // Giải thích kết quả dựa trên sự kết hợp cụ thể  
+        switch (combination) {  
+            case 0b0000001: interpreted_result = 1; break; // Chỉ model 1  
+            case 0b0000010: interpreted_result = 2; break; // Chỉ model 2  
+            case 0b0000100: interpreted_result = 3; break; // Chỉ model 3  
+            case 0b0001000: interpreted_result = 4; break; // Chỉ model 4  
+            case 0b0010000: interpreted_result = 5; break; // Chỉ model 5  
+            case 0b0100000: interpreted_result = 6; break; // Chỉ model 6  
+            case 0b1000000: interpreted_result = 7; break; // Chỉ model 7  
+            default: interpreted_result = 1; break; // Không có mô hình nào  
         }  
 
         printf("Sample %u Interpreted Result: %d\n", j, interpreted_result);  
     }  
 
-    // Clean up memory for classifier  
+    // Giải phóng bộ nhớ cho classifier  
     freeMyXGBClassifier(classifier);  
 
-    return 0; // Return code 0 to indicate success  
+    return 0; // Trả về mã 0 để chỉ ra thành công  
 }  
